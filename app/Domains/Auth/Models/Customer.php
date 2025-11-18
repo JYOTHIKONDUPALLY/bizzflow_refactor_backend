@@ -9,11 +9,10 @@ use Illuminate\Support\Str;
 // use App\Domains\Auth\Traits\HasCurrency;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
 class Customer extends Authenticatable
 {
-    use HasApiTokens, Notifiable, HasFranchise, HasLocation;
+    use Notifiable, HasFranchise, HasLocation;
     // HasCountry, HasCurrency;
 
     protected $guard = 'customer';

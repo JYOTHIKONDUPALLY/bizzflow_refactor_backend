@@ -5,16 +5,20 @@ namespace App\Domains\Auth\Models;
 use App\Domains\Auth\Traits\HasFranchise;
 use App\Domains\Auth\Traits\HasLocation;
 use App\Domains\Auth\Traits\HasRoles;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable, SoftDeletes, HasFranchise, HasLocation, HasRoles;
+    use Notifiable, SoftDeletes, HasFranchise, HasLocation, HasRoles;
 
     protected $guard = 'user';
+
+    // Primary key is a UUID string
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'franchise_id',

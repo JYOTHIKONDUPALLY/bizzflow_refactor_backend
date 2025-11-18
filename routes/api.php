@@ -86,7 +86,7 @@ Route::prefix('v1')->group(function () {
         Route::post('register', [CustomerAuthController::class, 'register'])->withoutMiddleware('auth:api');
         Route::post('login', [CustomerAuthController::class, 'login']);
         
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware('auth:api')->group(function () {
             Route::post('logout', [CustomerAuthController::class, 'logout']);
             Route::get('me', [CustomerAuthController::class, 'me']);
         });

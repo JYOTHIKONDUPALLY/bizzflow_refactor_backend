@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Remove stateful middleware for pure token-based API
         // If you need SPA authentication with cookies, configure this differently
+        
+       
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

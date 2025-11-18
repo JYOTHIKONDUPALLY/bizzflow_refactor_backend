@@ -14,6 +14,8 @@ use App\Domains\Auth\Repositories\UserRepository;
 use App\Domains\Auth\Repositories\LocationAdminRepository;
 use App\Domains\Auth\Repositories\FranchiseAdminRepository;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthService
@@ -43,14 +45,18 @@ class AuthService
         //     ]);
         // }
 
+        // Generate secure custom API token (no Passport)
+        $plainToken = Str::random(80);
+        $tokenHash = hash('sha256', $plainToken);
+
+        // Log the login to auth_logs with hashed token
+        $this->logAuthEvent($user, $userType, 'login', $ip, $tokenHash);
+
         // Update last login
         $this->updateLastLogin($user, $userType, $ip, $data->location_id);
 
-        // Create token
-        $token = $user->createToken($userType->value . '_token')->plainTextToken;
-
-        // Prepare response
-        return $this->prepareAuthResponse($user, $token, $userType);
+        // Prepare response with plain token (client will send this in Authorization header)
+        return $this->prepareAuthResponse($user, $plainToken, $userType);
     }
 
     private function findUserByType(string $email, UserType $userType, ?string $locationId = null)
@@ -140,6 +146,34 @@ class AuthService
 
     public function logout($user): void
     {
-        $user->currentAccessToken()->delete();
+        // Log the logout event
+        $this->logAuthEvent($user, $this->getUserType($user), 'logout', null, null);
+        // No token revocation needed with custom token system
     }
+
+    private function logAuthEvent($user, UserType $userType, string $eventType, ?string $ip, ?string $token): void
+    {
+        DB::table('auth_logs')->insert([
+            'id' => (string) Str::uuid(),
+            'entity_id' => $user->id,
+            'franchise_id' => $user->franchise_id,
+            'business_unit_id' => $user->business_unit_id,
+            'ip_address' => $ip,
+            'user_agent' => request()->userAgent() ?? null,
+            'event_type' => $eventType,
+            'event_time' => now(),
+            'apitoken' => $token,
+            'entity_type' => $userType->value
+        ]);
+    }
+
+    private function getUserType($user): UserType
+    {
+        // Determine user type based on model class
+        if ($user instanceof Customer) {
+            return UserType::CUSTOMER;
+        }
+        return UserType::USER;
+    }
+
 }
