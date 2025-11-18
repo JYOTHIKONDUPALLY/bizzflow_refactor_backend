@@ -6,14 +6,13 @@ use App\Domains\Auth\Traits\HasFranchise;
 use App\Domains\Auth\Traits\HasLocation;
 // use App\Domains\Auth\Traits\HasCountry;
 // use App\Domains\Auth\Traits\HasCurrency;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class Customer extends Authenticatable
 {
-    use HasApiTokens, Notifiable, SoftDeletes, HasFranchise, HasLocation;
+    use HasApiTokens, Notifiable, HasFranchise, HasLocation;
     // HasCountry, HasCurrency;
 
     protected $guard = 'customer';
