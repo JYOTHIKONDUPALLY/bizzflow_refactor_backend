@@ -4,6 +4,7 @@ namespace App\Domains\Auth\Models;
 
 use App\Domains\Auth\Traits\HasFranchise;
 use App\Domains\Auth\Traits\HasLocation;
+use Illuminate\Support\Str;
 // use App\Domains\Auth\Traits\HasCountry;
 // use App\Domains\Auth\Traits\HasCurrency;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -16,6 +17,10 @@ class Customer extends Authenticatable
     // HasCountry, HasCurrency;
 
     protected $guard = 'customer';
+
+    // Primary key is a UUID string, not an auto-incrementing integer
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'franchise_id',
@@ -47,10 +52,17 @@ class Customer extends Authenticatable
         parent::boot();
 
         static::creating(function ($customer) {
-            if (!$customer->customer_code) {
-                $customer->customer_code = 'CUST' . str_pad($customer->business_unit_id, 3, '0', STR_PAD_LEFT) 
+            // ensure UUID primary key is set
+            if (empty($customer->id)) {
+                $customer->id = (string) Str::uuid();
+            }
+
+            if (empty($customer->customer_code)) {
+                $customer->customer_code = 'CUST' . str_pad($customer->business_unit_id, 3, '0', STR_PAD_LEFT)
                     . str_pad(Customer::where('business_unit_id', $customer->business_unit_id)->count() + 1, 5, '0', STR_PAD_LEFT);
             }
+
+            // id and customer_code are set above; let Eloquent persist the model normally
         });
     }
 }

@@ -16,8 +16,8 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'franchise_id' => ['nullable', 'integer', 'exists:franchises,id'],
-            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
+            'franchise_id' => ['nullable', 'string', 'exists:franchises,id'],
+            'location_id' => ['nullable', 'string', 'exists:locations,id'],
         ];
     }
 }

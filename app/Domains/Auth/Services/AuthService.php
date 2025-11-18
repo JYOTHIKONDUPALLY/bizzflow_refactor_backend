@@ -30,17 +30,18 @@ class AuthService
     {
         $user = $this->findUserByType($data->email, $userType, $data->location_id);
 
-        if (!$user || !Hash::check($data->password, $user->password)) {
+        // Models store password hashes in `password_hash` column
+        if (!$user || !Hash::check($data->password, $user->password_hash)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        if ($user->status !== 'active') {
-            throw ValidationException::withMessages([
-                'email' => ['Your account is not active. Please contact support.'],
-            ]);
-        }
+        // if ($user->status !== 'active') {
+        //     throw ValidationException::withMessages([
+        //         'email' => ['Your account is not active. Please contact support.'],
+        //     ]);
+        // }
 
         // Update last login
         $this->updateLastLogin($user, $userType, $ip, $data->location_id);
@@ -52,22 +53,22 @@ class AuthService
         return $this->prepareAuthResponse($user, $token, $userType);
     }
 
-    private function findUserByType(string $email, UserType $userType, ?int $locationId = null)
+    private function findUserByType(string $email, UserType $userType, ?string $locationId = null)
     {
         return match($userType) {
             UserType::CUSTOMER => $this->customerRepo->findByEmail($email, $locationId),
             UserType::USER => $this->userRepo->findByEmail($email, $locationId),
-            UserType::LOCATION_ADMIN => $this->locationAdminRepo->findByEmail($email),
+            UserType::LOCATION_ADMIN => $this->locationRepo->findByEmail($email),
             UserType::FRANCHISE_ADMIN => $this->franchiseAdminRepo->findByEmail($email),
         };
     }
 
-    private function updateLastLogin($user, UserType $userType, string $ip, ?int $locationId = null): void
+    private function updateLastLogin($user, UserType $userType, string $ip, ?string $locationId = null): void
     {
         match($userType) {
             UserType::CUSTOMER => $this->customerRepo->updateLastLogin($user, $ip),
             UserType::USER => $this->userRepo->updateLastLogin($user, $ip),
-            UserType::LOCATION_ADMIN => $this->locationAdminRepo->updateLastLogin($user, $ip),
+            UserType::LOCATION_ADMIN => $this->locationRepo->updateLastLogin($user, $ip),
             UserType::FRANCHISE_ADMIN => $this->franchiseAdminRepo->updateLastLogin($user, $ip, $locationId),
         };
     }

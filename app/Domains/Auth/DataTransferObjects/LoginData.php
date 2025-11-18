@@ -11,5 +11,6 @@ class LoginData extends Data
         public string $password,
         public ?string $franchise_id = null,
         public ?string $business_unit_id = null,
+        public ?string $location_id = null,
     ) {}
 }

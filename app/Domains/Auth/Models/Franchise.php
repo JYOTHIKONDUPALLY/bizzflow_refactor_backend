@@ -5,14 +5,14 @@ namespace App\Domains\Auth\Models;
 use Illuminate\Database\Eloquent\Model;
 // use App\Domains\Auth\Traits\HasCountry;
 // use App\Domains\Auth\Traits\HasCurrency;
-use Illuminate\Database\Eloquent\SoftDeletes;
+// use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 
 class Franchise extends Model
 {
-        use HasFactory, SoftDeletes;
+        use HasFactory;
         // HasCountry, HasCurrency;
         protected $fillable = [
         'name',
