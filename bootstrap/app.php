@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\RoleMiddleware;
+use Presentation\Http\Middleware\AuthToken;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,13 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         apiPrefix: 'api',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-
-        // Register middleware aliases correctly
-        $middleware->alias(['auth.token', \Presentation\Http\Middleware\AuthToken::class]);
-        $middleware->alias(['role', \Presentation\Http\Middleware\RoleMiddleware::class]);
-
-    })
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->alias([
+          'auth.token' => AuthToken::class,
+        'role' => RoleMiddleware::class,
+    ]);
+})
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })

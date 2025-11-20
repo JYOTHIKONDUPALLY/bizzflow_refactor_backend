@@ -1,5 +1,5 @@
 <?php
-namespace Presentation\Http\Middleware;
+namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
@@ -19,24 +19,32 @@ class RoleMiddleware
             ], 401);
         }
 
-        // Get token from request
-        $tokenId = $request->bearerToken();
-        
-        // Get role from oauth_access_tokens
-        $token = DB::table('oauth_access_tokens')
-            ->where('id', $tokenId)
+        // Get role_id from user_roles table
+        $roleId = DB::table('user_roles')
             ->where('user_id', $user->id)
-            ->first();
+            ->value('role_id');
 
-        if (!$token || !$token->role) {
+        if (!$roleId) {
             return response()->json([
                 'success' => false,
-                'message' => 'No role assigned to token',
-            ], 403);
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        // Get role from roles table
+        $role = DB::table('roles')
+            ->where('id', $roleId)
+            ->value('name');
+
+        if (!$role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated',
+            ], 401);
         }
 
         // Check if user has any of the required roles
-        if (!in_array($token->role, $roles)) {
+        if (!in_array($role, $roles)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Insufficient permissions. Required roles: ' . implode(', ', $roles),

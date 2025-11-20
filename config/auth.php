@@ -44,10 +44,6 @@ return [
             'driver' => 'passport',
             'provider' => 'users',
         ],
-        'api_customer' => [
-            'driver' => 'passport',
-            'provider' => 'customers',
-        ],
          'customer' => [
             'driver' => 'passport',
             'provider' => 'customers',
@@ -96,6 +92,10 @@ return [
           'users' => [
             'driver' => 'eloquent',
             'model' => App\Domains\Auth\Models\User::class,
+        ],
+        'roles' => [
+            'driver' => 'eloquent',
+            'model' => App\Domains\Auth\Models\Role::class,
         ],
 
         'customers' => [
