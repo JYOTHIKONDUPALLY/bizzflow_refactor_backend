@@ -45,10 +45,33 @@ Route::prefix('v1')->group(function () {
         Route::post('register', [UserAuthController::class, 'register']);
         Route::post('login', [UserAuthController::class, 'login']);
         
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware('auth:api')->group(function () {
             Route::post('logout', [UserAuthController::class, 'logout']);
             Route::get('me', [UserAuthController::class, 'me']);
         });
+            
+    // Example routes with role middleware
+    Route::middleware(['role:BUAdmin'])->group(function () {
+        Route::get('/admin/dashboard', function () {
+            return response()->json(['message' => 'Welcome to Admin Dashboard']);
+        });
+        
+        Route::get('/admin/users', function () {
+            return response()->json(['message' => 'List of users']);
+        });
+    });
+    
+    Route::middleware(['role:BUManager,BUAdmin'])->group(function () {
+        Route::get('/manager/reports', function () {
+            return response()->json(['message' => 'Manager Reports']);
+        });
+    });
+    
+    Route::middleware(['role:BUStaff,BUManager,BUAdmin'])->group(function () {
+        Route::get('/staff/tasks', function () {
+            return response()->json(['message' => 'Staff Tasks']);
+        });
+    });
     });
 
     // Location Admin Authentication Routes
@@ -74,37 +97,4 @@ Route::prefix('v1')->group(function () {
     //     });
     // });
 
-
-
-    // Public routes
-Route::post('/auth/login', [UserAuthController::class, 'login'])->name('auth.login');
-
-// Protected routes
-Route::middleware('auth:api')->group(function () {
-    Route::post('/auth/logout', [UserAuthController::class, 'logout'])->name('auth.logout');
-    Route::get('/auth/me', [UserAuthController::class, 'me'])->name('auth.me');
-    
-    // Example routes with role middleware
-    Route::middleware(['role:BUAdmin'])->group(function () {
-        Route::get('/admin/dashboard', function () {
-            return response()->json(['message' => 'Welcome to Admin Dashboard']);
-        });
-        
-        Route::get('/admin/users', function () {
-            return response()->json(['message' => 'List of users']);
-        });
-    });
-    
-    Route::middleware(['role:BUManager,BUAdmin'])->group(function () {
-        Route::get('/manager/reports', function () {
-            return response()->json(['message' => 'Manager Reports']);
-        });
-    });
-    
-    Route::middleware(['role:BUStaff,BUManager,BUAdmin'])->group(function () {
-        Route::get('/staff/tasks', function () {
-            return response()->json(['message' => 'Staff Tasks']);
-        });
-    });
-});
 });

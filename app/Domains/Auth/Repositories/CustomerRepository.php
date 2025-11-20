@@ -11,7 +11,7 @@ class CustomerRepository
         return Customer::create($data);
     }
 
-    public function findByEmail(string $email, ?int $businessUnitId = null): ?Customer
+    public function findByEmail(string $email, ?string $businessUnitId = null): ?Customer
     {
         $query = Customer::where('email', $email);
         
@@ -30,7 +30,7 @@ class CustomerRepository
         ]);
     }
 
-    public function findByFranchiseAndLocation(int $franchiseId, int $businessUnitId)
+    public function findByFranchiseAndLocation(int $franchiseId, string $businessUnitId)
     {
         return Customer::where('franchise_id', $franchiseId)
             ->where('business_unit_id', $businessUnitId)

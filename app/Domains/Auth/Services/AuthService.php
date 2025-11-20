@@ -16,6 +16,7 @@ use App\Domains\Auth\Repositories\FranchiseAdminRepository;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AuthService
@@ -30,7 +31,7 @@ class AuthService
 
     public function login(LoginData $data, UserType $userType, string $ip): AuthResponseData
     {
-        $user = $this->findUserByType($data->email, $userType, $data->location_id);
+          $user = $this->findUserByType($data->email, $userType, $data->business_unit_id);
 
         // Models store password hashes in `password_hash` column
         if (!$user || !Hash::check($data->password, $user->password_hash)) {
@@ -38,13 +39,12 @@ class AuthService
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
-
         // Check if user is active (uncomment if needed)
-        // if ($user->status !== 'active') {
-        //     throw ValidationException::withMessages([
-        //         'email' => ['Your account is not active. Please contact support.'],
-        //     ]);
-        // }
+        if ($userType == UserType::USER && $user->is_active !== 1) {
+            throw ValidationException::withMessages([
+                'email' => ['Your account is not active. Please contact support.'],
+            ]);
+        }
 
         // Set the provider for token creation
         $provider = $this->getProviderName($userType);
@@ -60,20 +60,20 @@ class AuthService
         );
 
         $accessToken = $tokenResult->accessToken;
-        $token = $tokenResult->token;
+        // $token = $tokenResult->token;
 
         // Set token expiration (optional, defaults to config)
         // $token->expires_at = now()->addDays(30);
         // $token->save();
 
         // Log the login event
-        $this->logAuthEvent($user, $userType, 'login', $ip, $token->id);
+        $this->logAuthEvent($user, $userType, 'login', $ip, $accessToken);
 
         // Update last login
-        $this->updateLastLogin($user, $userType, $ip, $data->location_id);
+        $this->updateLastLogin($user, $userType, $ip, $data->business_unit_id);
 
         // Prepare response with Passport token
-        return $this->prepareAuthResponse($user, $accessToken, $userType, $token);
+        return $this->prepareAuthResponse($user, $accessToken, $userType, $accessToken);
     }
 
     public function logout($user): void
@@ -115,11 +115,11 @@ class AuthService
         return $this->prepareAuthResponse($user, $accessToken, $userType, $token);
     }
 
-    private function findUserByType(string $email, UserType $userType, ?string $locationId = null)
+    private function findUserByType(string $email, UserType $userType, ?string $businessUnitId = null)
     {
         return match($userType) {
-            UserType::CUSTOMER => $this->customerRepo->findByEmail($email, $locationId),
-            UserType::USER => $this->userRepo->findByEmail($email, $locationId),
+            UserType::CUSTOMER => $this->customerRepo->findByEmail($email, $businessUnitId),
+            UserType::USER => $this->userRepo->findByEmail($email, $businessUnitId),
             UserType::LOCATION_ADMIN => $this->locationRepo->findByEmail($email),
             UserType::FRANCHISE_ADMIN => $this->franchiseAdminRepo->findByEmail($email),
         };
@@ -242,8 +242,8 @@ class AuthService
         return match(true) {
             $user instanceof Customer => UserType::CUSTOMER,
             $user instanceof User => UserType::USER,
-            $user instanceof LocationAdmin => UserType::LOCATION_ADMIN,
-            $user instanceof FranchiseAdmin => UserType::FRANCHISE_ADMIN,
+            // $user instanceof LocationAdmin => UserType::LOCATION_ADMIN,
+            // $user instanceof FranchiseAdmin => UserType::FRANCHISE_ADMIN,
             default => throw new \RuntimeException('Unknown user type')
         };
     }

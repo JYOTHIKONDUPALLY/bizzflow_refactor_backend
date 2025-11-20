@@ -11,21 +11,23 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
+use Laravel\Passport\HasApiTokens;
 
 
 class User extends Authenticatable
 {
-    use Notifiable, SoftDeletes, HasFranchise, HasLocation, HasRoles;
+    use Notifiable, HasFranchise, HasLocation, HasRoles, HasApiTokens;
 
     protected $guard = 'user';
-
+    
     // Primary key is a UUID string
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
         'franchise_id',
-        'business_id',
+        'business_unit_id',
         'email',
         'password_hash',
         'first_name',
@@ -57,10 +59,11 @@ class User extends Authenticatable
     }
 
     // User has access ONLY to their assigned location
-    public function canAccessLocation(int $locationId): bool
+  public function canAccessLocation(string $businessUnitId): bool
     {
-        return $this->location_id === $locationId;
+        return $this->business_unit_id === $businessUnitId;
     }
+
    public function franchise(): BelongsTo
     {
         return $this->belongsTo(Franchise::class);
@@ -78,4 +81,19 @@ class User extends Authenticatable
     {
         return $this->roles()->first();
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            // ensure UUID primary key is set
+            if (empty($user->id)) {
+                $user->id = (string) Str::uuid();
+            }
+
+            // id is set above; let Eloquent persist the model normally
+        });
+    }
+
 }

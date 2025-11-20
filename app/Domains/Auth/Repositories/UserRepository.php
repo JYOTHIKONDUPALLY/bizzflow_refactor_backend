@@ -3,7 +3,9 @@
 namespace App\Domains\Auth\Repositories;
 
 use App\Domains\Auth\Models\User;
+use App\Domains\Auth\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class UserRepository
 {
@@ -12,14 +14,13 @@ class UserRepository
         return User::create($data);
     }
 
-    public function findByEmail(string $email, ?int $locationId = null): ?User
+    public function findByEmail(string $email, ?string $businessUnitId = null): ?User
     {
         $query = User::where('email', $email);
         
-        if ($locationId) {
-            $query->where('location_id', $locationId);
+        if ($businessUnitId) {
+            $query->where('business_unit_id', $businessUnitId);
         }
-        
         return $query->first();
     }
 
@@ -52,5 +53,15 @@ class UserRepository
         }
 
         return $user;
+    }
+    public function getRoleIdByRoleName(string $roleName): int
+    {
+        return Role::where('name', $roleName)->first()->id;
+    }
+            public function insertUserRole($user_id, $role_id){
+        DB::table('user_roles')->insert([
+            'user_id' => $user_id,
+            'role_id' => $role_id,
+        ]);
     }
 }

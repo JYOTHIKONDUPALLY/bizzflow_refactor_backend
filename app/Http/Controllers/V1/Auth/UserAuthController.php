@@ -32,7 +32,8 @@ class UserAuthController extends Controller
                 email: $user->email,
                 password: $request->password,
                 franchise_id: $user->franchise_id,
-                location_id: $user->location_id
+                business_unit_id: $user->business_unit_id,
+                role_id: $user->role_id
             ),
             UserType::USER,
             $request->ip()

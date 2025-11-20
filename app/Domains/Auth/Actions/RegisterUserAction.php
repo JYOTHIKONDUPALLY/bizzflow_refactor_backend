@@ -7,29 +7,34 @@ use App\Domains\Auth\DataTransferObjects\RegisterUserData;
 use App\Domains\Auth\Repositories\UserRepository;
 use App\Domains\Auth\Events\UserRegistered;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+
 
 class RegisterUserAction
 {
     public function __construct(
         private UserRepository $userRepo
+
     ) {}
 
     public function execute(RegisterUserData $data): User
     {
         $user = $this->userRepo->create([
             'franchise_id' => $data->franchise_id,
-            'location_id' => $data->location_id,
-            'role_id' => $data->role_id,
+            'business_unit_id' => $data->business_unit_id,
             'first_name' => $data->first_name,
             'last_name' => $data->last_name,
             'email' => $data->email,
-            'phone' => $data->phone,
-            'password' => Hash::make($data->password),
-            'status' => 'active',
+            'password_hash' => Hash::make($data->password),
+            'is_active' => 1
         ]);
 
-        event(new UserRegistered($user));
+        $this->userRepo->insertUserRole($user->id, $data->role_id);
+
+
+        // event(new UserRegistered($user));
 
         return $user;
     }
+
 }
