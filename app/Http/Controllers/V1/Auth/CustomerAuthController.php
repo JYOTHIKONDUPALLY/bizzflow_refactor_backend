@@ -14,6 +14,7 @@ use App\Http\Requests\Auth\RegisterCustomerRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerAuthController extends Controller
 {
@@ -84,7 +85,8 @@ class CustomerAuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $user = $request->user();
+        Log::info('Customer logout', ['user_id' => $this->getAuthenticatedUser($request)]);
+       $user = $this->getAuthenticatedUser($request);
         if ($user) {
             $this->logoutAction->execute($user);
         }
@@ -98,7 +100,7 @@ class CustomerAuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         /** @var \App\Models\Customer $customer */
-        $customer = $request->user();
+         $customer = $this->getAuthenticatedUser($request);
         $customer->load(['franchise', 'location', 'country', 'currency']);
 
         return response()->json([
@@ -136,4 +138,18 @@ class CustomerAuthController extends Controller
             ],
         ]);
     }
+     private function getAuthenticatedUser(Request $request)
+    {
+        // Try each guard until we find an authenticated user
+        $guards = ['api', 'customer', 'location_admin', 'franchise_admin'];
+        
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                return Auth::guard($guard)->user();
+            }
+        }
+
+        // Fallback: try default request user
+        
+}
 }

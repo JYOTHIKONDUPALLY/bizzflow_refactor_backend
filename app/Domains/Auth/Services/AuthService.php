@@ -39,24 +39,80 @@ class AuthService
             ]);
         }
 
+        // Check if user is active (uncomment if needed)
         // if ($user->status !== 'active') {
         //     throw ValidationException::withMessages([
         //         'email' => ['Your account is not active. Please contact support.'],
         //     ]);
         // }
 
-        // Generate secure custom API token (no Passport)
-        $plainToken = Str::random(80);
-        $tokenHash = hash('sha256', $plainToken);
+        // Set the provider for token creation
+        $provider = $this->getProviderName($userType);
+        config(['auth.guards.api.provider' => $provider]);
 
-        // Log the login to auth_logs with hashed token
-        $this->logAuthEvent($user, $userType, 'login', $ip, $tokenHash);
+        // Revoke all previous tokens for this user
+        $user->tokens()->delete();
+
+        // Create Passport token with wildcard scope (or specific scopes if registered)
+        $tokenResult = $user->createToken(
+            'auth_token',
+            ['*'] // Wildcard grants all permissions
+        );
+
+        $accessToken = $tokenResult->accessToken;
+        $token = $tokenResult->token;
+
+        // Set token expiration (optional, defaults to config)
+        // $token->expires_at = now()->addDays(30);
+        // $token->save();
+
+        // Log the login event
+        $this->logAuthEvent($user, $userType, 'login', $ip, $token->id);
 
         // Update last login
         $this->updateLastLogin($user, $userType, $ip, $data->location_id);
 
-        // Prepare response with plain token (client will send this in Authorization header)
-        return $this->prepareAuthResponse($user, $plainToken, $userType);
+        // Prepare response with Passport token
+        return $this->prepareAuthResponse($user, $accessToken, $userType, $token);
+    }
+
+    public function logout($user): void
+    {
+        $userType = $this->getUserType($user);
+        
+        // Log the logout event with current token
+        $currentToken = $user->token();
+        $this->logAuthEvent($user, $userType, 'logout', request()->ip(), $currentToken?->id);
+        
+        // Revoke current access token
+        if ($currentToken) {
+            $currentToken->revoke();
+        }
+        
+        // Optional: Revoke all tokens for this user
+        // $user->tokens()->delete();
+    }
+
+    public function refreshToken($user): AuthResponseData
+    {
+        $userType = $this->getUserType($user);
+        
+        // Revoke current token
+        $user->token()->revoke();
+        
+        // Create new token with wildcard scope
+        $tokenResult = $user->createToken(
+            'auth_token',
+            ['*']
+        );
+
+        $accessToken = $tokenResult->accessToken;
+        $token = $tokenResult->token;
+
+        // Log token refresh
+        $this->logAuthEvent($user, $userType, 'token_refresh', request()->ip(), $token->id);
+
+        return $this->prepareAuthResponse($user, $accessToken, $userType, $token);
     }
 
     private function findUserByType(string $email, UserType $userType, ?string $locationId = null)
@@ -79,7 +135,28 @@ class AuthService
         };
     }
 
-    private function prepareAuthResponse($user, string $token, UserType $userType): AuthResponseData
+    private function getTokenScopes(UserType $userType): array
+    {
+        // Define scopes based on user type
+        return match($userType) {
+            UserType::CUSTOMER => ['customer'],
+            UserType::USER => ['user'],
+            UserType::LOCATION_ADMIN => ['location-admin'],
+            UserType::FRANCHISE_ADMIN => ['franchise-admin'],
+        };
+    }
+
+    private function getProviderName(UserType $userType): string
+    {
+        return match($userType) {
+            UserType::CUSTOMER => 'customers',
+            UserType::USER => 'users',
+            UserType::LOCATION_ADMIN => 'location_admins',
+            UserType::FRANCHISE_ADMIN => 'franchise_admins',
+        };
+    }
+
+    private function prepareAuthResponse($user, string $accessToken, UserType $userType, $token = null): AuthResponseData
     {
         $userData = [
             'id' => $user->id,
@@ -135,7 +212,7 @@ class AuthService
         }
 
         return new AuthResponseData(
-            token: $token,
+            token: $accessToken,
             type: 'Bearer',
             user: $userData,
             franchise: $franchise,
@@ -144,36 +221,30 @@ class AuthService
         );
     }
 
-    public function logout($user): void
-    {
-        // Log the logout event
-        $this->logAuthEvent($user, $this->getUserType($user), 'logout', null, null);
-        // No token revocation needed with custom token system
-    }
-
-    private function logAuthEvent($user, UserType $userType, string $eventType, ?string $ip, ?string $token): void
+    private function logAuthEvent($user, UserType $userType, string $eventType, ?string $ip, ?string $tokenId): void
     {
         DB::table('auth_logs')->insert([
             'id' => (string) Str::uuid(),
             'entity_id' => $user->id,
-            'franchise_id' => $user->franchise_id,
-            'business_unit_id' => $user->business_unit_id,
+            'franchise_id' => $user->franchise_id ?? null,
+            'business_unit_id' => $user->business_unit_id ?? null,
             'ip_address' => $ip,
             'user_agent' => request()->userAgent() ?? null,
             'event_type' => $eventType,
             'event_time' => now(),
-            'apitoken' => $token,
+            'apitoken' => $tokenId, // Store Passport token ID
             'entity_type' => $userType->value
         ]);
     }
 
     private function getUserType($user): UserType
     {
-        // Determine user type based on model class
-        if ($user instanceof Customer) {
-            return UserType::CUSTOMER;
-        }
-        return UserType::USER;
+        return match(true) {
+            $user instanceof Customer => UserType::CUSTOMER,
+            $user instanceof User => UserType::USER,
+            $user instanceof LocationAdmin => UserType::LOCATION_ADMIN,
+            $user instanceof FranchiseAdmin => UserType::FRANCHISE_ADMIN,
+            default => throw new \RuntimeException('Unknown user type')
+        };
     }
-
 }

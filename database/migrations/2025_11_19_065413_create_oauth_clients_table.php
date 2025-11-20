@@ -11,7 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::dropIfExists('oauth_access_tokens');
+        Schema::create('oauth_clients', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->nullableMorphs('owner');
+            $table->string('name');
+            $table->string('secret')->nullable();
+            $table->string('provider')->nullable();
+            $table->text('redirect_uris');
+            $table->text('grant_types');
+            $table->boolean('revoked');
+            $table->timestamps();
+        });
     }
 
     /**
@@ -19,7 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-       
+        Schema::dropIfExists('oauth_clients');
     }
 
     /**

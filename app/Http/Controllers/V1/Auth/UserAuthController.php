@@ -1,30 +1,36 @@
-
 <?php
+
 namespace App\Http\Controllers\V1\Auth;
 
-use App\Actions\Auth\LoginAction;
-use App\Actions\Auth\LogoutAction;
-use App\Actions\Customer\RegisterCustomerAction;
-use App\DataTransferObjects\Auth\LoginData;
-use App\Enums\UserType;
+use App\Domains\Auth\Actions\LoginAction;
+use App\Domains\Auth\Actions\LogoutAction;
+use App\Domains\Auth\DataTransferObjects\LoginData;
+use App\Domains\Auth\Enums\UserType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Http\Requests\Customer\RegisterCustomerRequest;
+use App\Http\Requests\Auth\RegisterUserRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-
+use App\Domains\Auth\Actions\RegisterUserAction;
+use App\Domains\Auth\DataTransferObjects\RegisterUserData;
 class UserAuthController extends Controller
 {
-    public function register(RegisterCustomerRequest $request): JsonResponse
+
+    public function __construct(
+        private RegisterUserAction $registerAction,
+        private LoginAction $loginAction,
+        private LogoutAction $logoutAction
+    ){}
+    public function register(RegisterUserRequest $request): JsonResponse
     {
-        $data = RegisterCustomerRequest::from($request->validated());
+        $data = RegisterUserData::from($request->validated());
         
         $user = $this->registerAction->execute($data);
 
         $authResponse = $this->loginAction->execute(
             new LoginData(
                 email: $user->email,
-                password_hash: $request->password,
+                password: $request->password,
                 franchise_id: $user->franchise_id,
                 location_id: $user->location_id
             ),

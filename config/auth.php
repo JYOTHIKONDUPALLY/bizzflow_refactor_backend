@@ -48,29 +48,30 @@ return [
             'driver' => 'passport',
             'provider' => 'customers',
         ],
+         'customer' => [
+            'driver' => 'passport',
+            'provider' => 'customers',
+        ],
+
+        'user' => [
+            'driver' => 'passport',
+            'provider' => 'users',
+        ],
     ],
     'sanctum' => [
             'driver' => 'sanctum',
             'provider' => null,
         ],
 
-        'customer' => [
-            'driver' => 'session',
-            'provider' => 'customers',
-        ],
-
-        'user' => [
-            'driver' => 'session',
-            'provider' => 'users',
-        ],
+       
 
         'location_admin' => [
-            'driver' => 'session',
+            'driver' => 'passport',
             'provider' => 'location_admins',
         ],
 
         'franchise_admin' => [
-            'driver' => 'session',
+            'driver' => 'passport',
             'provider' => 'franchise_admins',
         ],
 

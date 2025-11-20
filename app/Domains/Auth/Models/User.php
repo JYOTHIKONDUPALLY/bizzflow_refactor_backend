@@ -2,6 +2,7 @@
 
 namespace App\Domains\Auth\Models;
 
+use App\Domains\Auth\Models\BusinessUnits;
 use App\Domains\Auth\Traits\HasFranchise;
 use App\Domains\Auth\Traits\HasLocation;
 use App\Domains\Auth\Traits\HasRoles;
@@ -9,6 +10,8 @@ use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 
 class User extends Authenticatable
 {
@@ -57,5 +60,22 @@ class User extends Authenticatable
     public function canAccessLocation(int $locationId): bool
     {
         return $this->location_id === $locationId;
+    }
+   public function franchise(): BelongsTo
+    {
+        return $this->belongsTo(Franchise::class);
+    }
+    public function businessUnit(): BelongsTo
+    {
+        return $this->belongsTo(BusinessUnits::class);
+    }
+
+    public function hasRole(string $roleSlug): bool
+    {
+        return $this->roles()->where('name', $roleSlug)->exists();
+    }
+    public function getPrimaryRole(): ?Role
+    {
+        return $this->roles()->first();
     }
 }

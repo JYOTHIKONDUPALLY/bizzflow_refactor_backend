@@ -17,7 +17,7 @@ class LoginRequest extends FormRequest
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
             'franchise_id' => ['nullable', 'string', 'exists:franchises,id'],
-            'location_id' => ['nullable', 'string', 'exists:locations,id'],
+            'business_unit_id' => ['nullable', 'string', 'exists:business_units,id'],
         ];
     }
 }

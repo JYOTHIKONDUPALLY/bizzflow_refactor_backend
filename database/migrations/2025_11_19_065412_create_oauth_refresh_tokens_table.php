@@ -11,7 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::dropIfExists('oauth_refresh_tokens');
+        Schema::create('oauth_refresh_tokens', function (Blueprint $table) {
+            $table->char('id', 80)->primary();
+            $table->char('access_token_id', 80)->index();
+            $table->boolean('revoked');
+            $table->dateTime('expires_at')->nullable();
+        });
     }
 
     /**
@@ -19,7 +24,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-       
+        Schema::dropIfExists('oauth_refresh_tokens');
     }
 
     /**
